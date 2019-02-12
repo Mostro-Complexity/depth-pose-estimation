@@ -62,8 +62,6 @@ DEPTH-POSE-ESTIMATION
 │  │  launch.json
 │  │  
 │  └─.ropeproject
-│          config.py
-│          objectdb
 │          
 ├─data
 │  ├─input
@@ -110,3 +108,4 @@ DEPTH-POSE-ESTIMATION
         regressor9.pkl
         theta.pkl
 ```
+**depth_images.npy** and **joints.npy** is the preprocessed dataset
