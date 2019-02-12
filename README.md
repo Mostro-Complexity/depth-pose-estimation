@@ -47,6 +47,7 @@ Install all development dependencies
 pip install sklearn
 pip install numpy
 pip install pickle
+pip install opencv-python
 ```
 
 ## Content of this project
