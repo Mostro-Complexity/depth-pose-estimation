@@ -320,15 +320,15 @@ def stochastic(regressor, features, unit_directions):
     return L
 
 
-def train(joint_id, X, y, model_dir, load_models, min_samples_leaf=400):
+def train(joint_id, features, units, model_dir,  min_samples_leaf=400):
     """Trains a regressor tree on the unit directions towards the joint.
 
     @params:
         joint_id : current joint id
-        X : samples feature array (N x num_samples x num_feats)
-        y : samples unit direction vectors (N x num_samples x 3)
-        min_samples_split : minimum number of samples required to split an internal node
-        load_models : load trained models from disk (if exist)
+        features : samples feature array (N x num_samples x num_feats)
+        units : samples unit direction vectors (N x num_samples x 3)
+        model_dir : path of trained models 
+        min_samples_leaf : minimum number of samples required to split an internal node
     """
     print('Start training %s model...' % JOINT_NAMES[joint_id])
 
@@ -336,33 +336,26 @@ def train(joint_id, X, y, model_dir, load_models, min_samples_leaf=400):
         model_dir, 'regressor' + str(joint_id) + '.pkl')
     L_path = os.path.join(model_dir, 'L' + str(joint_id) + '.pkl')
 
-    # Load saved model from disk
-    if load_models and (os.path.isfile(regressor_path) and os.path.isfile(L_path)):
-        print('Loading model %s from files...' % JOINT_NAMES[joint_id])
-
-        regressor = pickle.load(open(regressor_path, 'rb'))
-        L = pickle.load(open(L_path, 'rb'))
-        return regressor, L
-
     # (N x num_samples, num_feats)
-    X_reshape = X.reshape(X.shape[0] * X.shape[1], X.shape[2])
-    y_reshape = y.reshape(y.shape[0] * y.shape[1],
-                          y.shape[2])  # (N x num_samples, 3)
+    features_rs = features.reshape(
+        features.shape[0] * features.shape[1], features.shape[2])
+    units_rs = units.reshape(units.shape[0] * units.shape[1],
+                             units.shape[2])  # (N x num_samples, 3)
 
     # Count the number of valid (non-zero) samples
     # inverse of invalid samples
-    valid_rows = np.logical_not(np.all(X_reshape == 0, axis=1))
+    valid_rows = np.logical_not(np.all(features_rs == 0, axis=1))
     print('Model %s - Valid samples: %d / %d' %
-          (JOINT_NAMES[joint_id], X_reshape[valid_rows].shape[0], X_reshape.shape[0]))
+          (JOINT_NAMES[joint_id], features_rs[valid_rows].shape[0], features_rs.shape[0]))
 
     # Fit decision tree to samples
     regressor = DecisionTreeRegressor(min_samples_leaf=min_samples_leaf)
-    regressor.fit(X_reshape[valid_rows], y_reshape[valid_rows])
+    regressor.fit(features_rs[valid_rows], units_rs[valid_rows])
 
-    L = stochastic(regressor, X_reshape, y_reshape)
+    L = stochastic(regressor, features_rs, units_rs)
 
     # Print statistics on leafs
-    leaf_ids = regressor.apply(X_reshape)
+    leaf_ids = regressor.apply(features_rs)
     bin = np.bincount(leaf_ids)
     unique_ids = np.unique(leaf_ids)
     biggest = np.argmax(bin)
@@ -381,15 +374,6 @@ def train(joint_id, X, y, model_dir, load_models, min_samples_leaf=400):
     pickle.dump(regressor, open(regressor_path, 'wb'))
     pickle.dump(L, open(L_path, 'wb'))
 
-    return regressor, L
-
-
-def train_series(joint_id, X, y, theta, model_dir, load_model_flag):
-    """Train each joint sequentially.
-    """
-    feature, unit = extract_feat_by_time(joint_id, X, y, theta)
-    # feature, unit = extract_feat_by_frame(joint_id, X, y, theta)
-    regressor, L = train(joint_id, feature, unit, model_dir, load_model_flag)
     return regressor, L
 
 
@@ -563,7 +547,7 @@ if __name__ == "__main__":
     regressors, Ls = {}, {}
 
     if args.load_model:
-        print('\n------- Testing models -------')
+        print('\n------- Loading models -------')
         theta = pickle.load(
             open(os.path.join(args.model_dir, 'theta.pkl'), 'rb'))
 
@@ -585,8 +569,11 @@ if __name__ == "__main__":
             args.model_dir, 'theta.pkl'), 'wb'))
 
         for joint_id in range(NUM_JOINTS):
-            regressors[joint_id], Ls[joint_id] = train_series(
-                joint_id, imgs_train, joints_train, theta, args.model_dir, args.load_model)
+            feature, unit = extract_feat_by_time(
+                joint_id, imgs_train, joints_train, theta)
+
+            regressors[joint_id], Ls[joint_id] = train(
+                joint_id, feature, unit, args.model_dir)
 
     print('\n------- Testing models -------')
 
