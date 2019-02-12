@@ -75,10 +75,11 @@ JOINT_IDX = {
 kinem_order = [14,  0, 13, 12, 1, 2, 5, 3, 6, 4, 7,  8, 10, 9, 11]
 kinem_parent = [-1, 14, 14, 14, 0, 0, 0, 2, 5, 3, 6, 12, 13, 8, 10]
 
-# entire offset
-entire_offset = np.empty((NUM_SAMPLES, 1287, 3))
 # Number of steps during evaluation
 NUM_STEPS = 300
+
+# Step size (in cm) during evaluation
+STEP_SIZE = 2
 
 np.set_printoptions(threshold=np.nan)
 
@@ -161,23 +162,6 @@ def split_dataset(X, y, train_ratio):
     print('Data split: # training data: %d, # test data: %d' %
           (X_train.shape[0], X_test.shape[0]))
     return X_train, y_train, X_test, y_test
-
-
-def compute_theta(num_feats=NUM_FEATS, max_feat_offset=MAX_FEAT_OFFSET):
-    """Computes the theta for each skeleton.
-
-    @params:
-        max_feat_offset : the maximum offset for features (before divided by d)
-        num_feats : the number of features of each offset point
-    """
-    print('Computing theta...')
-
-    # Compute the theta = (-max_feat_offset, max_feat_offset) for 4 coordinates (x1, x2, y1, y2)
-    # (4, num_feats)
-    theta = np.random.randint(-max_feat_offset,
-                              max_feat_offset + 1, (4, num_feats))
-
-    return theta
 
 
 def get_features_by_time(img_seq, joint_time_seq, z, theta):
@@ -409,7 +393,7 @@ def train_series(joint_id, X, y, theta, model_dir, load_model_flag):
     return regressor, L
 
 
-def predict(regressor, L, theta, qm0, img_seq, body_center, num_steps=300, step_size=2):
+def predict(regressor, L, theta, qm0, img_seq, body_center, num_steps=NUM_STEPS, step_size=2):
     """Test the model on a single example.
     """
     num_test_img = img_seq.shape[0]
@@ -443,9 +427,11 @@ def predict(regressor, L, theta, qm0, img_seq, body_center, num_steps=300, step_
     return qm, joint_pred
 
 
-def mkdir(dir):
+def init_workspace(dir_list):
     try:
-        os.makedirs(dir)
+        for path in dir_list:
+            if not os.path.exists(path):
+                os.makedirs(path)
     except OSError as e:
         if e.errno != 17:
             raise
@@ -564,6 +550,8 @@ if __name__ == "__main__":
     args.preds_dir = 'data/output/preds'
     args.png_dir = 'data/output/png'
 
+    init_workspace([args.preds_dir, args.png_dir])
+
     depth_images, joints = load_dataset(args.input_dir)
     imgs_train, joints_train, imgs_test, joints_test = split_dataset(
         depth_images, joints, TRAIN_RATIO)
@@ -571,7 +559,6 @@ if __name__ == "__main__":
     num_train = imgs_train.shape[0]
     num_test = imgs_test.shape[0]
 
-    # theta = compute_theta()
     theta = None
     regressors, Ls = {}, {}
 

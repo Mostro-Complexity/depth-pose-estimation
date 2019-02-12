@@ -4,7 +4,7 @@
     // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [{
-            "name": "Random tree walks using CAD-60",
+            "name": "train with CAD-60 and rtw model",
             "type": "python",
             "request": "launch",
             "program": "${file}",
@@ -12,7 +12,7 @@
             "args": ["--dataset", "CAD-60", "--input-dir", "data/input"]
         },
         {
-            "name": "rtw.py load model using CAD-60",
+            "name": "load model to predict CAD-60",
             "type": "python",
             "request": "launch",
             "program": "${file}",
@@ -25,34 +25,6 @@
             "request": "launch",
             "module": "enter-your-module-name-here",
             "console": "integratedTerminal"
-        },
-        {
-            "name": "Python: Django",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/manage.py",
-            "console": "integratedTerminal",
-            "args": [
-                "runserver",
-                "--noreload",
-                "--nothreading"
-            ],
-            "django": true
-        },
-        {
-            "name": "Python: Flask",
-            "type": "python",
-            "request": "launch",
-            "module": "flask",
-            "env": {
-                "FLASK_APP": "app.py"
-            },
-            "args": [
-                "run",
-                "--no-debugger",
-                "--no-reload"
-            ],
-            "jinja": true
         },
         {
             "name": "Python: Current File (External Terminal)",
