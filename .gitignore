@@ -4,5 +4,3 @@
 /.vscode/.ropeproject
 
 /data/output/png
-
-*.pyc
